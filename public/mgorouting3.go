@@ -16,9 +16,11 @@ func main() {
 
 	start := time.Now()
 	num := 6
+	result := make(chan int)
 
 	for i := 0; i < num; i++ {
-		fmt.Println(job(i))
+		job(i)
+
 	}
 
 	end := time.Since(start)
