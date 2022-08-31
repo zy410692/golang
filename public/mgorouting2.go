@@ -16,15 +16,29 @@ func main() {
 
 	start := time.Now()
 	num := 6
+	result := make(chan int)
 
 	for i := 0; i < num; i++ {
-		fmt.Println(job(i))
+		go func(index int) {
+			result <- job(index)
+		}(i)
+
+	}
+
+	count := 0
+	for item := range result {
+		count++
+		fmt.Printf("取到结果%d\n", item)
+		if count == num {
+			close(result)
+			break
+		}
 	}
 
 	end := time.Since(start)
 
 	fmt.Println("耗时：", end.String())
 
-	//耗时： 3.004248843s
+	//耗时： 500.427361ms
 
 }

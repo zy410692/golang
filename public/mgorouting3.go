@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -15,18 +16,33 @@ func job(index int) int {
 func main() {
 
 	start := time.Now()
-	num := 6
+	num := 5
 	result := make(chan int)
 
-	for i := 0; i < num; i++ {
-		job(i)
+	wg := sync.WaitGroup{}
 
+	for i := 0; i < num; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			result <- job(index)
+		}(i)
+
+	}
+
+	go func() {
+		defer close(result)
+		wg.Wait()
+	}()
+
+	for item := range result {
+		fmt.Printf("取到结果%d\n", item)
 	}
 
 	end := time.Since(start)
 
 	fmt.Println("耗时：", end.String())
 
-	//耗时： 3.004248843s
+	//耗时： 500.427361ms
 
 }
