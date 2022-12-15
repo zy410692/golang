@@ -21,7 +21,8 @@ func main() {
 			userModel.UserId = int(time.Now().Unix())
 			if userModel.UserId > 0 {
 				mq := Lib.NewMq()
-				err = mq.SendMessage(Lib.QUEUE_NEWUSER, strconv.Itoa(userModel.UserId))
+				err = mq.SendMessage(Lib.ROUTER_KEY_USERREG, Lib.EXCHANGE_USER, strconv.Itoa(userModel.UserId))
+				defer mq.Channel.Close()
 				if err != nil {
 					log.Println(err)
 				}
@@ -31,5 +32,24 @@ func main() {
 		}
 	})
 
-	router.Run(":8081")
+	c := make(chan error)
+
+	go func() {
+		err := router.Run(":8081")
+		if err != nil {
+			c <- err
+		}
+	}()
+
+	go func() {
+		err := Lib.UserInit()
+		if err != nil {
+			c <- err
+		}
+
+	}()
+
+	err := <-c
+	log.Fatal(err)
+
 }

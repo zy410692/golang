@@ -3,12 +3,16 @@ package Lib
 import (
 	"log"
 	"main/rabbitmq-demo/SimpleService/AppInit"
+	"strings"
 
 	"github.com/streadway/amqp"
 )
 
 const (
-	QUEUE_NEWUSER = "newuser"
+	QUEUE_NEWUSER       = "newuser"
+	QUEUE_NEWUSER_UNION = "newuser_union"
+	EXCHANGE_USER       = "UserExchange"
+	ROUTER_KEY_USERREG  = "userreg"
 )
 
 type MQ struct {
@@ -24,15 +28,36 @@ func NewMq() *MQ {
 	return &MQ{Channel: c}
 }
 
-func (this *MQ) SendMessage(queueName string, message string) error {
+func (this *MQ) DecQueueAndBind(queues string, key string, exchange string) error {
+	qList := strings.Split(queues, ",")
+	for _, queue := range qList {
+		q, err := this.Channel.QueueDeclare(queue, false, false, false, false, nil)
+		if err != nil {
+			return err
+		}
+		err = this.Channel.QueueBind(q.Name, key, exchange, false, nil)
+		if err != nil {
+			return err
+		}
 
-	_, err := this.Channel.QueueDeclare(queueName, false, false, false, false, nil)
-	if err != nil {
-		return err
 	}
-	return this.Channel.Publish("", queueName, false, false,
+	return nil
+
+}
+
+func (this *MQ) SendMessage(key string, exchange string, message string) error {
+
+	return this.Channel.Publish(exchange, key, false, false,
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(message),
 		})
+}
+
+func (this *MQ) Consume(queue string, key string, callback func(<-chan amqp.Delivery)) {
+	msgs, err := this.Channel.Consume(queue, key, false, false, false, false, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	callback(msgs)
 }
