@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
 
@@ -91,7 +92,7 @@ func (c *DingTalkClient) SendMessage(content string) error {
 	return nil
 }
 
-func main() {
+func task() {
 	var kubeconfig *string
 	if home := filepath.Dir("/Users/zhangyi/"); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -143,4 +144,16 @@ func main() {
 		client.SendMessage(fmt.Sprintf("Node: %s, CPU Usage: %.2f%%, Memory Usage: %.2f%%\n", node.ObjectMeta.Name, cpuPercentage, memPercentage))
 		fmt.Printf("Node: %s, CPU Usage: %.2f%%, Memory Usage: %.2f%%\n", node.ObjectMeta.Name, cpuPercentage, memPercentage)
 	}
+}
+
+func main() {
+	c := cron.New(cron.WithSeconds())
+	_, err := c.AddFunc("0 0 9 * * *", task)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	c.Start()
+
+	// Keep the program running
+	select {}
 }
