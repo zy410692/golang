@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	dirPath = "/data/minio-data/yunwei/backup/mysql/10_5_0_126"
+	dirPath = "****"
 )
 
 func cleanfile() {
@@ -22,13 +22,13 @@ func cleanfile() {
 		log.Println(info)
 		log.Println(info.ModTime())
 
-		if !info.IsDir() && time.Since(info.ModTime()) > 100*24*time.Hour {
+		if !info.IsDir() && time.Since(info.ModTime()) > 30*24*time.Hour {
 			err := os.Remove(path)
+			go cleandir(path)
 			if err != nil {
 				return err
 			}
 		}
-		go cleandir(path)
 
 		return nil
 	})
@@ -42,13 +42,13 @@ func cleandir(file string) {
 	dir := filepath.Dir(file)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatalf("Failed to read directory: %v", err)
+		log.Printf("Failed to read directory: %v", err)
 	}
 
 	if len(files) == 0 {
 		err := os.Remove(dir)
 		if err != nil {
-			log.Fatalf("Failed to remove directory: %v", err)
+			log.Printf("Failed to remove directory: %v", err)
 		} else {
 			log.Printf("Directory %v removed successfully", dir)
 		}
